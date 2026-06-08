@@ -12,26 +12,23 @@ function getBrevo() {
   });
 }
 
-function buildEmailContent(contact) {
-  const firstName =
-    contact.firstName || contact.fullName?.split(" ")[0] || "there";
-  const company = contact.companyName || contact.companyDomain || "your company";
-
-  const subject = `Quick idea for ${company}`;
+// Hardcoded email — same content sent to every contact
+function buildEmailContent() {
+  const subject = `Automated Outreach Pipeline Demo — Mayur Das`;
 
   const htmlContent = `
 <html>
   <body style="font-family: Arial, sans-serif; color: #1a1a2e; line-height: 1.7; max-width: 600px;">
-    <p>Hi ${firstName},</p>
-    <p>I came across <strong>${company}</strong> and wanted to reach out directly.</p>
+    <p>Hi,</p>
+    <p>I wanted to reach out to share a project I built as part of my internship application.</p>
     <p>I built an automated outreach pipeline that does in seconds what most teams spend hours on:</p>
     <ul>
-      <li>Discovers similar companies from a single seed domain</li>
-      <li>Finds C-suite and VP decision-makers with verified work emails</li>
-      <li>Sends personalized outreach automatically after a human review step</li>
+      <li>Discovers similar companies from a single seed domain (Ocean.io)</li>
+      <li>Finds decision-makers and their verified work emails (Prospeo)</li>
+      <li>Sends personalized outreach automatically after a human review step (Brevo)</li>
     </ul>
-    <p>The whole thing runs on Ocean.io → Prospeo → Brevo, wired end-to-end. One input, zero manual handoffs.</p>
-    <p>Would it be worth a quick 10-minute call this week?</p>
+    <p>The whole thing runs Ocean.io → Prospeo → Brevo, wired end-to-end. One input, zero manual handoffs.</p>
+    <p>Would love to hear your thoughts. Happy to do a quick 10-minute walkthrough this week.</p>
     <p>
       Best,<br/>
       <strong>Mayur Das</strong><br/>
@@ -41,10 +38,10 @@ function buildEmailContent(contact) {
 </html>`.trim();
 
   const textContent =
-    `Hi ${firstName},\n\n` +
-    `I came across ${company} and wanted to reach out directly.\n\n` +
-    `I built an automated outreach pipeline that discovers similar companies, finds decision-makers with verified emails, and sends personalized outreach after a human review step.\n\n` +
-    `Would it be worth a quick 10-minute call this week?\n\nBest,\nMayur Das\ngithub.com/MayurDas24`;
+    `Hi,\n\n` +
+    `I wanted to reach out to share a project I built as part of my internship application.\n\n` +
+    `I built an automated outreach pipeline that discovers similar companies from a seed domain, finds decision-makers with verified emails, and sends outreach after a human review step — all wired end-to-end: Ocean.io → Prospeo → Brevo.\n\n` +
+    `Would love to hear your thoughts. Happy to do a quick 10-minute walkthrough this week.\n\nBest,\nMayur Das\ngithub.com/MayurDas24`;
 
   return { subject, htmlContent, textContent };
 }
@@ -63,12 +60,10 @@ export async function sendOutreachEmail(contact) {
     throw new Error("Missing BREVO_API_KEY in server/.env");
   }
   if (!process.env.BREVO_SENDER_EMAIL) {
-    throw new Error(
-      "Missing BREVO_SENDER_EMAIL in server/.env — add the verified sender email from your Brevo dashboard"
-    );
+    throw new Error("Missing BREVO_SENDER_EMAIL in server/.env");
   }
 
-  const { subject, htmlContent, textContent } = buildEmailContent(contact);
+  const { subject, htmlContent, textContent } = buildEmailContent();
 
   const payload = {
     sender: {
