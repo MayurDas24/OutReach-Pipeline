@@ -1,0 +1,92 @@
+.terminal {
+  background: #0f0f0f;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+}
+
+.termBar {
+  background: #1a1a1a;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.termTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #666;
+  margin-left: 8px;
+  flex: 1;
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #444;
+}
+
+.body {
+  padding: 12px 14px;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.empty {
+  padding: 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cursor {
+  font-family: var(--font-mono);
+  color: #3a3;
+  font-size: 14px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.emptyText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #444;
+}
+
+.line {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ts {
+  color: #444;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.msg { color: #a0a0a0; word-break: break-all; }
+
+/* Level colors */
+.info .msg { color: #a0a0a0; }
+.success .msg { color: #6fc; }
+.warn .msg { color: #fc6; }
+.error .msg { color: #f66; }
+.http .msg { color: #6cf; }
+.debug .msg { color: #555; }
