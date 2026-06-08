@@ -107,12 +107,12 @@ PROSPEO_API_KEY=your_prospeo_api_key
 
 # Brevo
 BREVO_API_KEY=your_brevo_api_key
-BREVO_SENDER_EMAIL=hello@yourdomain.com
+BREVO_SENDER_EMAIL=hello@mayurdev.site
 BREVO_SENDER_NAME=Your Name
 BREVO_DRY_RUN=false
 
 # Demo email — used when real emails cannot be revealed (see Known Limitations)
-DEMO_FALLBACK_EMAIL=your@email.com
+DEMO_FALLBACK_EMAIL=mayurrdas05@gmail.com
 ```
 
 ### 3. Run in development
