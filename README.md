@@ -214,11 +214,3 @@ Prospeo's free plan has a hard restriction: **email addresses are found but mask
 | HTTP Client | Axios |
 
 ---
-
-## Author
-
-**Mayur Das**
-GitHub: [github.com/MayurDas24](https://github.com/MayurDas24)
-
-Built as a submission for the SDE Intern role at Subspace / VocalLabs.
-Submission form: https://forms.gle/twfBdFvb6nrg5uzu7
