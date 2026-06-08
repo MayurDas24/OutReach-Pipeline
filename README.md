@@ -1,106 +1,195 @@
-# Outreach Pipeline
+# VocalLabs Outreach Pipeline
 
 > Fully automated cold-outreach pipeline — one domain in, emails out. Zero manual steps.
-> Built for the Vocallabs SDE take-home assignment.
+> Built for the **Vocallabs SDE Intern** take-home assignment.
 
 ---
 
-## Architecture
+## What This Does
+
+You input a single company domain. The pipeline:
+1. Discovers 10 lookalike companies using Ocean.io
+2. Finds real decision-makers at each company using Prospeo (names, titles, LinkedIn URLs)
+3. Pauses at a human review checkpoint — you approve or deselect contacts
+4. Sends a hardcoded outreach email to every approved contact via Brevo
+
+One input. Four stages. No copy-paste. No manual handoffs.
+
+---
+
+## Project Structure
 
 ```
 outreach-pipeline/
-├── backend/                  Node.js + Express API
-│   └── src/
-│       ├── stages/           One file per pipeline stage
-│       │   ├── stage1_ocean.js      Ocean.io lookalike finder
-│       │   ├── stage2_prospeo.js    Prospeo decision-maker search
-│       │   ├── stage3_eazyreach.js  Eazyreach email resolver
-│       │   └── stage4_brevo.js      Brevo transactional email sender
-│       ├── services/
-│       │   ├── pipelineOrchestrator.js  Stage wiring + checkpoint logic
-│       │   └── emailTemplates.js        Personalized email copy
-│       ├── middleware/
-│       │   └── pipelineRoutes.js    REST + SSE endpoints
-│       ├── utils/
-│       │   ├── httpClient.js        Axios factory with retry + rate limiting
-│       │   ├── pipelineEmitter.js   EventEmitter for SSE streaming
-│       │   └── domainUtils.js       Domain validation + normalization
-│       ├── config/
-│       │   ├── env.js               Zod-validated env schema
-│       │   └── logger.js            Winston structured logger
-│       ├── server.js                Express entry point
-│       └── cli.js                   CLI runner
-└── frontend/                 React + Vite SPA
-    └── src/
-        ├── components/       UI components (CSS Modules)
-        ├── hooks/usePipeline.js  SSE state machine
-        └── utils/api.js      API client
+├── client/                          React + Vite frontend
+│   ├── src/
+│   │   ├── components/              UI components
+│   │   ├── pages/
+│   │   │   └── Dashboard.jsx        Main pipeline UI
+│   │   ├── services/                API client
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+│
+├── server/                          Node.js + Express backend
+│   ├── config/                      Environment + app config
+│   ├── controllers/
+│   │   └── pipelineController.js    Pipeline orchestration logic
+│   ├── routes/
+│   │   └── pipelineRoutes.js        REST API endpoints
+│   ├── services/
+│   │   ├── oceanService.js          Stage 1 — Ocean.io lookalike finder
+│   │   ├── prospeoService.js        Stage 2 — Prospeo people search
+│   │   └── brevoService.js          Stage 3 — Brevo email sender
+│   ├── utils/                       Shared helpers
+│   ├── logs/                        Runtime logs
+│   ├── server.js                    Express entry point
+│   └── .env                         API keys (not committed)
+│
+├── .gitignore
+├── package.json
+└── README.md
 ```
+
+---
 
 ## Pipeline Stages
 
 | Stage | Tool | Input | Output |
 |---|---|---|---|
-| 1 | Ocean.io | Seed domain | Lookalike company domains |
+| 1 | Ocean.io | Seed domain | 10 lookalike company domains |
 | 2 | Prospeo | Company domains | Decision-makers + LinkedIn URLs |
-| 3 | Eazyreach | LinkedIn URLs | Verified work emails |
-| 4 | Brevo | Verified emails | Personalized outreach sent |
+| 3 | Human Checkpoint | Contact list | Approved contacts |
+| 4 | Brevo | Approved contacts | Outreach emails sent |
+
+> **Note:** The original assignment specified Eazyreach for Stage 3 (LinkedIn URL → verified work email). See the [Known Limitations](#known-limitations) section for why Prospeo is used instead and what that means for email resolution.
 
 ---
 
 ## Setup
 
-### 1. Prerequisites
+### Prerequisites
 
 - Node.js 18+
-- Accounts at: Ocean.io, Prospeo, Eazyreach, Brevo
-- A domain with company email (e.g. `hello@mayurdev.site`)
+- Accounts at: [Ocean.io](https://ocean.io), [Prospeo](https://prospeo.io), [Brevo](https://brevo.com)
+- A verified sender domain/email in Brevo (e.g. `hello@yourdomain.com`)
 
-### 2. Environment
-
-```bash
-cp backend/.env.example backend/.env
-# Fill in all API keys
-```
-
-### 3. Install dependencies
+### 1. Clone and install
 
 ```bash
-npm install          # Root
-cd backend && npm install
-cd ../frontend && npm install
+git clone https://github.com/MayurDas24/outreach-pipeline.git
+cd outreach-pipeline
+
+# Install server dependencies
+cd server && npm install
+
+# Install client dependencies
+cd ../client && npm install
 ```
 
-### 4. Run in development
+### 2. Configure environment
+
+Create `server/.env` with the following:
+
+```env
+PORT=5000
+CLIENT_URL=http://localhost:5173
+
+# Ocean.io
+OCEAN_API_KEY=your_ocean_api_key
+OCEAN_RESULT_LIMIT=10
+
+# Prospeo
+PROSPEO_API_KEY=your_prospeo_api_key
+
+# Brevo
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=hello@yourdomain.com
+BREVO_SENDER_NAME=Your Name
+BREVO_DRY_RUN=false
+
+# Demo email — used when real emails cannot be revealed (see Known Limitations)
+DEMO_FALLBACK_EMAIL=your@email.com
+```
+
+### 3. Run in development
 
 ```bash
 # Terminal 1 — backend
-cd backend && npm run dev
+cd server && npm run dev
 
 # Terminal 2 — frontend
-cd frontend && npm run dev
+cd client && npm run dev
 ```
 
-Then open http://localhost:5173
+Open http://localhost:5173
 
 ---
 
-## CLI Usage
+## How to Use
 
-Run the pipeline entirely from the terminal (no UI needed for the demo):
+1. Enter a company domain (e.g. `stripe.com`) in the input box
+2. Click **Run Pipeline →**
+3. Watch the pipeline stages complete in real time:
+   - Ocean.io finds 10 lookalike companies
+   - Prospeo searches for decision-makers at each company
+   - The pipeline pauses at the **Safety Checkpoint**
+4. Review the contacts list — deselect anyone you want to skip
+5. Click **Send to N →** to fire the emails via Brevo
+6. See sent/failed results and the full pipeline log
 
-```bash
-cd backend
+---
 
-# Standard run (with safety checkpoint prompt)
-node src/cli.js stripe.com
+## Safety Checkpoint
 
-# Dry run — resolves emails but doesn't send
-node src/cli.js stripe.com --dry-run
+Before any email is sent, the pipeline always pauses and shows:
+- Every resolved contact with their name, title, company, and email
+- Checkboxes to deselect individual contacts
+- A **Deselect All** option to cancel the send entirely
 
-# Auto-confirm checkpoint (non-interactive / CI)
-node src/cli.js stripe.com --auto-confirm
+No email fires without explicit human approval at this step.
+
+---
+
+## Email Content
+
+The outreach email is fully hardcoded on the backend (`server/services/brevoService.js`). Every contact receives the same message regardless of who they are. The subject and body describe this pipeline project itself — used as the outreach demo content.
+
+To change what is sent, edit the `buildEmailContent()` function in `brevoService.js`.
+
+---
+
+## Known Limitations
+
+### ⚠️ Eazyreach — Not Used (No Credits Available)
+
+The original assignment pipeline was:
 ```
+Ocean.io → Prospeo → Eazyreach → Brevo
+```
+Eazyreach was responsible for Stage 3: resolving LinkedIn profile URLs into verified work email addresses.
+
+**The mentor clarified in the FAQ:**
+> *"Eazyreach credits — Given the surge in applications, we are unable to provide credits for everyone at this point. Please use Prospeo itself as a replacement for Eazyreach to find people (and their LinkedIn and email IDs) and proceed with the automation."*
+
+Prospeo was used as the replacement. It successfully finds real people at each company (real names, real titles, real LinkedIn URLs). However:
+
+### ⚠️ Prospeo Free Plan — Email Addresses Cannot Be Revealed
+
+Prospeo's free plan has a hard restriction: **email addresses are found but masked** (e.g. `a*******@bluesnap.com`) and cannot be revealed without a paid plan. All three available endpoints were attempted:
+
+| Endpoint | Result |
+|---|---|
+| `/search-person` | ✅ Works — returns real people with names, titles, LinkedIn URLs |
+| `/enrich-person` | ⚠️ Works but `revealed: false` — email exists but is masked on free plan |
+| `/email-finder` | ❌ Returns `DEPRECATED` error on free plan |
+
+**What this means for the demo:** Prospeo correctly finds real decision-makers (e.g. Abhishek Kumar at Razorpay, Hayley Norman at GoCardless) with their real LinkedIn URLs. Since their actual email addresses cannot be revealed on the free plan, **the pipeline routes all outreach emails to the developer's own email address** (`mayurrdas05@gmail.com`) to demonstrate that the full end-to-end flow works — Ocean → Prospeo → Checkpoint → Brevo send.
+
+**In a production setup** with a paid Prospeo plan, the `/enrich-person` endpoint would return the real revealed email for each contact, and Brevo would send to them directly with zero code changes needed.
 
 ---
 
@@ -108,54 +197,28 @@ node src/cli.js stripe.com --auto-confirm
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/pipeline/start` | Start a pipeline run |
-| `GET` | `/api/pipeline/:runId/stream` | SSE event stream |
-| `GET` | `/api/pipeline/:runId/state` | Current run state |
-| `POST` | `/api/pipeline/:runId/confirm` | Confirm checkpoint |
-| `POST` | `/api/pipeline/:runId/cancel` | Cancel at checkpoint |
-| `GET` | `/api/health` | Health check |
+| `POST` | `/api/pipeline/run` | Run Ocean + Prospeo stages, return contacts |
+| `POST` | `/api/pipeline/send` | Send approved contacts via Brevo |
 
 ---
 
-## Safety Checkpoint
+## Tech Stack
 
-Before emails fire, the pipeline pauses and:
-- Displays a full list of resolved contacts + emails
-- Requires explicit confirmation (UI button or CLI `yes` prompt)
-- Can be cancelled at this point — no emails will be sent
-
----
-
-## Error Resilience
-
-- **Retries**: 3 attempts with exponential backoff on 429/503/network errors
-- **Rate limiting**: Honoured via `Retry-After` headers; manual delays between Eazyreach calls
-- **Partial failure**: Single-domain failures in Stage 2 are logged and skipped; pipeline continues
-- **Email deduplication**: LinkedIn URL-based dedup prevents duplicate outreach
-- **Input validation**: Zod schemas on both env vars and API request bodies
-- **Dry run mode**: Set `DRY_RUN=true` to test the full pipeline without sending
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite |
+| Backend | Node.js, Express |
+| Lookalike Discovery | Ocean.io API |
+| People Search | Prospeo API |
+| Email Sending | Brevo (Sendinblue) API |
+| HTTP Client | Axios |
 
 ---
 
-## Email Copy
+## Author
 
-Emails are personalized by seniority:
-- CEOs/Founders get a brevity-first opener
-- CTOs get an engineer-to-engineer tone
-- COOs get an efficiency-focused angle
-- VPs/Directors get a "solved the obvious problems" angle
+**Mayur Das**
+GitHub: [github.com/MayurDas24](https://github.com/MayurDas24)
 
-Subject lines are consistent per company (hash-based rotation) so repeated runs don't create duplicates.
-
----
-
-## Production Deployment
-
-```bash
-# Build frontend
-cd frontend && npm run build
-
-# Set NODE_ENV=production in backend/.env
-# Start backend (serves React build as static files)
-cd backend && npm start
-```
+Built as a submission for the SDE Intern role at Subspace / VocalLabs.
+Submission form: https://forms.gle/twfBdFvb6nrg5uzu7
